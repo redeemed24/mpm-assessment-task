@@ -11,6 +11,5 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', 'CompaniesController@index');
+Route::get('/employees/export', 'EmployeesController@export');
