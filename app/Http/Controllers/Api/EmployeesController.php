@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+
 use Excel;
 
 use App\Employees;
@@ -12,7 +14,9 @@ class EmployeesController extends Controller
 {
     public function export(){
     	
-        $filename = "Employees-" . time();
+        $filename = "employees-" . time();
+        
+        $success = false; $data = [];
 
     	$file = Excel::create($filename, function($excel){
 
@@ -40,23 +44,36 @@ class EmployeesController extends Controller
 
     	})->string('csv');
 
+    	$filename .=".csv";
 
-        $filename .=".csv";
-
-        $url = \Storage::disk('s3')->put($filename, $file, [
+        try{
+            $uploaded = \Storage::disk('s3')->put($filename, $file, [
                'visibility' => 'public',
                'ContentType' => 'application/csv'
-           ]);
+            ]);
+        }catch(\Aws\S3\Exception\S3Exception $e){
+           
+            return response()->json([
+                "success" => false,
+                "error" => $e->getMessage()
+            ]);
+        }
 
-        Exports::create([
-            "file" => $filename
-        ]);
+        if($uploaded){
+            $success = true;
+            $url = \Storage::disk('s3')->url($filename);
+
+            Exports::create([
+                "file" => $url
+            ]);
+
+            $data["file"] = $url;
+        }
 
         return response()->json([
-            "success" => true,
-            "data" => [
-                "file" => \Storage::disk('s3')->url($filename)
-            ]
+            "success" => $success,
+            "data" => $data
         ]);
     }
 }
+

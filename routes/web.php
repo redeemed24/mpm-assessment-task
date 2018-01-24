@@ -12,4 +12,5 @@
 */
 
 Route::get('/', 'CompaniesController@index');
-Route::get('/employees/export', 'EmployeesController@export');
+
+Auth::routes();
