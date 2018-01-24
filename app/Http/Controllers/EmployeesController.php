@@ -14,7 +14,7 @@ class EmployeesController extends Controller
     	
         $filename = "Employees-" . time();
 
-    	Excel::create($filename, function($excel){
+    	$file = Excel::create($filename, function($excel){
 
     		$excel->setTitle("Employees");
     		
@@ -38,16 +38,24 @@ class EmployeesController extends Controller
 
     		});
 
-    	})->store('csv', 'exports');
+    	})->string('csv');
+
+
+        $filename .=".csv";
+
+        $url = \Storage::disk('s3')->put($filename, $file, [
+               'visibility' => 'public',
+               'ContentType' => 'application/csv'
+           ]);
 
         Exports::create([
-            "file" => $filename . ".csv"
+            "file" => $filename
         ]);
 
         return response()->json([
             "success" => true,
             "data" => [
-                "file" => url("/") . "/exports/" . $filename . ".csv"
+                "file" => \Storage::disk('s3')->url($filename)
             ]
         ]);
     }
